@@ -23,3 +23,4 @@ morse_code = { #alphabet
     #Leerzeichen
     ' ': "/"
 }
+

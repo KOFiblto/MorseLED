@@ -13,15 +13,15 @@ speed = 0.01
 
 
 class data:
-    def _init_(self, message):
-        self.__message = message
+    def __init__(self, message):
+        self.message = message
 
-    def _or_(self, other):
+    def __or__(self, other):
         other.connect(self)
         return other
 
 class translate:
-    def _init_(self, type):
+    def __init__(self, type):
         self.__type = type
     
     def connect(self, other):
@@ -30,13 +30,13 @@ class translate:
     def translate(self, letter):
         return letter.upper()
 
-    def _or_(self, other):
+    def __or__(self, other):
         other.connect(self)
         for letter in self.partner.message:
             other.write(self.translate(letter))
 
 class stream:
-    def _init_(self, type):
+    def __init__(self, type):
         self.__type = type
         self.__message = None
     
@@ -49,12 +49,6 @@ class stream:
 data("HalloWelt") | translate("Morse") | stream("stdout")
 
 
-
-
-
-
-
-efefefe
 
 
 

@@ -1,5 +1,14 @@
 from morse import morse_code, morse_code_reverse
-from abc import ABC, abstractmethod
+try:
+    from machine import Pin
+except ImportError:
+    class Pin:
+        OUT = None
+        def __init__(self, pin_no, mode): pass
+        def on(self): pass
+        def off(self): pass
+
+
 class Consumer:
     pass
 
@@ -49,11 +58,56 @@ class StdIn(InputStream):
         return self._buffer
 
 class StdOut(OutputStream):
+    # ANSI code for blinking start and reset
+    BLINK_ON = "\033[5m"
+    BLINK_OFF = "\033[0m"
+
     def write(self, val):
-        print(val, end="")
+        # wrap each printed character in blink on/off codes
+        print(f"{self.BLINK_ON}{val}{self.BLINK_OFF}", end="")
 
     def flush(self):
-        print()
+        # print newline with blinking effect
+        print(f"{self.BLINK_ON}\n{self.BLINK_OFF}", end="")
+
+# New classes with identical functionality but hardware LED blink
+class LedOut(OutputStream):
+    """
+    Acts like StdOut but also blinks an on-board LED on the ESP32 for each write/flush.
+    """
+    def __init__(self, pin_no=2):  # default to built-in LED pin
+        self.led = Pin(pin_no, Pin.OUT)
+        # reuse ANSI blink codes for console output
+        self.BLINK_ON = StdOut.BLINK_ON
+        self.BLINK_OFF = StdOut.BLINK_OFF
+
+    def write(self, val):
+        # hardware blink on
+        self.led.on()
+        # console blink output
+        print(f"{self.BLINK_ON}{val}{self.BLINK_OFF}", end="")
+        # hardware blink off
+        self.led.off()
+
+    def flush(self):
+        # hardware blink on
+        self.led.on()
+        # console blink newline
+        print(f"{self.BLINK_ON}\n{self.BLINK_OFF}", end="")
+        # hardware blink off
+        self.led.off()
+
+class LdrIn(InputStream):
+    """
+    Identical to StdIn (named for LED driver input consistency).
+    """
+    def __init__(self, iterable=None):
+        self._buffer = list(iterable) if iterable is not None else []
+
+    def __call__(self, iterable=None):
+        if iterable is not None:
+            self._buffer = list(iterable)
+        return self._buffer
 
 class Pipe:
     def __init__(self, stream):

@@ -23,4 +23,6 @@ morse_code = { #alphabet
     #Leerzeichen
     ' ': "/"
 }
+morse_code_reverse = {value: key for key, value in morse_code.items()}
+
 

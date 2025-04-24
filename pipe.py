@@ -1,5 +1,5 @@
 from morse import morse_code, morse_code_reverse
-
+from abc import ABC, abstractmethod
 class Consumer:
     pass
 
@@ -9,6 +9,7 @@ class OutputStream(Consumer):
         for val in self._last_iterable:
             self.write(val)
         self.flush()
+        return self._last_iterable
 
     def write(self, val):
         raise Exception("Not implemented")
@@ -20,25 +21,20 @@ class OutputStream(Consumer):
         if isinstance(other, InputStream):
             buffer = []
 
-            # Unsichtbarer Datenfänger
             class Collector(OutputStream):
                 def write(self2, val):
                     buffer.append(val)
                 def flush(self2):
-                    pass  # Unterdrücke Flush, da nur Pufferung benötigt wird
+                    pass
 
-            # Trick: Führe die bisherige Pipeline aus, aber sammle die Ausgabe
             collector = Collector()
-            collector(self._last_iterable)  # Verarbeite den gespeicherten Datenstrom
+            collector(self._last_iterable)
 
-            # Morse-Code-Teile zu einem String zusammenfügen
             morse_str = ''.join(buffer).strip()
-
-            # Weiterleitung an die nächste Pipeline (z. B. StdIn)
-            return Pipe(morse_str.split(' ')) | other  # Pipe mit dem gesammelten Morse-String
+            return Pipe(morse_str.split(' ')) | other
 
         raise Exception("Right-hand side must be an InputStream")
-    
+
 class InputStream(Consumer):
     def __call__(self, iterable):
         return iterable
@@ -50,7 +46,7 @@ class StdIn(InputStream):
     def __call__(self, iterable=None):
         if iterable is not None:
             self._buffer = list(iterable)
-        return iter(self._buffer)
+        return self._buffer
 
 class StdOut(OutputStream):
     def write(self, val):
@@ -61,7 +57,12 @@ class StdOut(OutputStream):
 
 class Pipe:
     def __init__(self, stream):
-        self.stream = stream if isinstance(stream, (list, tuple)) else [stream]
+        if isinstance(stream, str):
+            self.stream = list(stream)
+        elif isinstance(stream, (list, tuple)):
+            self.stream = list(stream)
+        else:
+            self.stream = [stream]
 
     def __or__(self, step):
         if isinstance(step, Consumer):

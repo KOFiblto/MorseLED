@@ -1,3 +1,7 @@
+try:
+    import uasyncio as asyncio
+except ImportError:
+    import asyncio
 from morse import morse_code, morse_code_reverse
 try:
     from machine import Pin
@@ -8,6 +12,18 @@ except ImportError:
         def on(self): pass
         def off(self): pass
 
+
+async def blink(self, symbol):
+        durations = {
+            '.': self.dot,
+            '-': self.dot * 3
+        }
+        duration = durations.get(symbol)
+        if duration is not None:
+            self.led.on()
+            await asyncio.sleep_ms(duration)
+            self.led.off()
+            await asyncio.sleep_ms(self.dot)
 
 class Consumer:
     pass
@@ -64,7 +80,7 @@ class StdOut(OutputStream):
 
     def write(self, val):
         # wrap each printed character in blink on/off codes
-        print(f"{self.BLINK_ON}{val}{self.BLINK_OFF}", end="")
+        print(f"{self.BLINK_ON}[/{val}]{self.BLINK_OFF}", end="")
 
     def flush(self):
         # print newline with blinking effect
